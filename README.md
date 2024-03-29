@@ -21,7 +21,7 @@ El **web scraping** automatiza la recopilación de datos relevantes de los sitio
 El proyecto ha consistido en el desarrollo de un sistema automatizado que incluye las siguientes etapas:
 
 1. **Web Scraping**:
-   - Se ha utilizado la biblioteca **Beautiful Soup** para extraer datos de múltiples sitios web.
+   - Se ha utilizado las bibliotecas de  **Beautiful Soup** y **Selenium** para extraer datos de múltiples sitios web.
    - Se han definido los sitios web de interés y se han creado scripts para extraer la información relevante de manera eficiente.
 
 2. **Almacenamiento en una base de datos relacional (SQLite)**:
