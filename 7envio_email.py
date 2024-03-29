@@ -12,12 +12,12 @@ current_folder = os.path.dirname(os.path.abspath(__file__))
 # Configuración de la conexión SMTP
 server = smtplib.SMTP('smtp.gmail.com', 587)
 server.starttls()
-server.login("admiluzin18@gmail.com", "ypxsyvrvsemhildu")
+server.login("tu_correo@gmail.com", "tu_contraseña")
 
 # Creación del mensaje
 msg = MIMEMultipart()
-msg['From'] = "admiluzin18@gmail.com"
-msg['To'] = "compras@luzin.com.ar, ventas@luzin.com.ar"
+msg['From'] = "tu_correo@gmail.com"
+msg['To'] = "destinatario1@correo.com, destinatario2@correo.com"
 msg['Subject'] = "Lista de Precios de la competencia"
 
 # Obtención de la fecha y hora actuales
@@ -39,8 +39,9 @@ with open(file_path, "rb") as attachment:
     msg.attach(part)
 
 # Envío del correo electrónico
-server.sendmail("admiluzin18@gmail.com", ["ventas@luzin.com.ar"], msg.as_string())
+server.sendmail("tu_correo@gmail.com", ["destinatario@correo.com"], msg.as_string())
 
 # Cierre de la conexión SMTP
 server.quit()
+
 
