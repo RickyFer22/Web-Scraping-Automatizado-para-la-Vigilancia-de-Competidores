@@ -1,0 +1,44 @@
+name: Web Scraping Automatizado
+
+on:
+  schedule:
+    # Frecuencia de ejecución (ejemplo: cada hora)
+    - cron: '0 * * * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      # Instalar dependencias
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Instalar Firefox
+      - uses: actions/setup-mozilla@v2
+
+      # Ejecutar scripts
+      - name: Run scraping scripts
+        run: |
+          for file in *.py; do
+            python "$file"
+          done
+
+      # Almacenar la base de datos
+      - name: Upload database
+        uses: actions/upload-artifact@v2
+        with:
+          name: precios_competencia.db
+          path: precios_competencia.db
+
+      # Generar y subir Excel
+      - name: Generate and upload Excel
+        run: |
+          python 6listas_en_excel.py
+          
+          # Subir archivo Excel
+          actions/upload-artifact@v2
+          with:
+            name: precios_competencia.xlsx
+            path: precios_competencia.xlsx
