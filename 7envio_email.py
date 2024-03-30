@@ -21,7 +21,7 @@ server.login(correo, contrasena)
 # Creación del mensaje
 msg = MIMEMultipart()
 msg['From'] = correo
-msg['To'] = "destinatario1@correo.com, destinatario2@correo.com"
+msg['To'] = "DESTINATARIOS_CORREOS"
 msg['Subject'] = "Lista de Precios de la competencia"
 
 # Obtención de la fecha y hora actuales
