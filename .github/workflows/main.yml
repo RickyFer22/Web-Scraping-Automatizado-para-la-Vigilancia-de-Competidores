@@ -2,8 +2,8 @@ name: Web Scraping Automatizado
 
 on:
   schedule:
-    # Frecuencia de ejecución (ejemplo: cada hora)
-    - cron: '0 * * * *'
+    # Frecuencia de ejecución lunes, miércoles y viernes
+    - cron: '0 0 * * 1,3,5'
 
 jobs:
   build:
