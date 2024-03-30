@@ -9,14 +9,18 @@ from email import encoders
 # Obtener la ruta de la carpeta actual
 current_folder = os.path.dirname(os.path.abspath(__file__))
 
+# **Configuración de variables de entorno**
+correo = os.environ.get("EMAIL_ADDRESS")
+contrasena = os.environ.get("EMAIL_PASSWORD")
+
 # Configuración de la conexión SMTP
 server = smtplib.SMTP('smtp.gmail.com', 587)
 server.starttls()
-server.login("tu_correo@gmail.com", "tu_contraseña")
+server.login(correo, contrasena)
 
 # Creación del mensaje
 msg = MIMEMultipart()
-msg['From'] = "tu_correo@gmail.com"
+msg['From'] = correo
 msg['To'] = "destinatario1@correo.com, destinatario2@correo.com"
 msg['Subject'] = "Lista de Precios de la competencia"
 
@@ -39,9 +43,10 @@ with open(file_path, "rb") as attachment:
     msg.attach(part)
 
 # Envío del correo electrónico
-server.sendmail("tu_correo@gmail.com", ["destinatario@correo.com"], msg.as_string())
+server.sendmail(correo, ["destinatario@correo.com"], msg.as_string())
 
 # Cierre de la conexión SMTP
 server.quit()
+
 
 
