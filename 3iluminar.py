@@ -51,51 +51,55 @@ def process_products(soup):
         conn.commit()
 
 for base_url in base_urls:
-    # Visitar la página principal de la categoría
-    driver.get(base_url)
+    try:
+        # Visitar la página principal de la categoría
+        driver.get(base_url)
 
-    last_height = driver.execute_script("return document.body.scrollHeight")
-    while True:
-        # Desplazarse hacia abajo
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        last_height = driver.execute_script("return document.body.scrollHeight")
+        while True:
+            # Desplazarse hacia abajo
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
-        # Esperar a que se cargue el nuevo contenido
-        time.sleep(5)
+            # Esperar a que se cargue el nuevo contenido
+            time.sleep(5)
 
-        # Calcular la nueva altura y mover el scroll
-        new_height = driver.execute_script("return document.body.scrollHeight")
-        if new_height == last_height:
-            break
-        last_height = new_height
+            # Calcular la nueva altura y mover el scroll
+            new_height = driver.execute_script("return document.body.scrollHeight")
+            if new_height == last_height:
+                break
+            last_height = new_height
 
-    # Procesar la página actual
-    html = driver.page_source
-    soup = BeautifulSoup(html, 'html.parser')
-
-    # Verificar si la página contiene el mensaje de error
-    error_message = soup.find(string="¡Ups! No pudimos encontrar esa página.")
-    if error_message:
-        print(f"¡Se encontró un error en la página {base_url}! Deteniendo el proceso.")
-        continue
-
-    process_products(soup)
-
-    # Visitar páginas adicionales si existen
-    for page_url in additional_pages:
-        driver.get(page_url)
-        time.sleep(5)  # Esperar a que se cargue la página
-
-        # Procesar la página adicional
+        # Procesar la página actual
         html = driver.page_source
         soup = BeautifulSoup(html, 'html.parser')
 
         # Verificar si la página contiene el mensaje de error
         error_message = soup.find(string="¡Ups! No pudimos encontrar esa página.")
         if error_message:
-            print(f"¡Se encontró un error en la página {page_url}! Deteniendo el proceso.")
-            break
+            print(f"¡Se encontró un error en la página {base_url}! Saltando a la siguiente página.")
+            continue
 
         process_products(soup)
+
+        # Visitar páginas adicionales si existen
+        for page_url in additional_pages:
+            driver.get(page_url)
+            time.sleep(5)  # Esperar a que se cargue la página
+
+            # Procesar la página adicional
+            html = driver.page_source
+            soup = BeautifulSoup(html, 'html.parser')
+
+            # Verificar si la página contiene el mensaje de error
+            error_message = soup.find(string="¡Ups! No pudimos encontrar esa página.")
+            if error_message:
+                print(f"¡Se encontró un error en la página {page_url}! Saltando a la siguiente página.")
+                break
+
+            process_products(soup)
+    except Exception as e:
+        print(f"Ocurrió un error al procesar la página {base_url}: {str(e)}. Saltando a la siguiente página.")
+
 
 # Cerrar la conexión con la base de datos
 conn.close()
