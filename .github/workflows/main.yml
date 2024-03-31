@@ -26,9 +26,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y software-properties-common
-        sudo add-apt-repository "deb https://mozilla.repo.gksu.me/firefox/ app all"
-        wget -O /tmp/mozilla.key https://mozilla.repo.gksu.me/deb.asc
-        sudo gpg --dearmor < /tmp/mozilla.key | sudo tee /etc/apt/trusted.gpg.d/mozilla.gpg > /dev/null
+        sudo add-apt-repository "deb https://download.mozilla.org/?product=firefox-esr-latest-ssl&os=ubuntu&lang=en-US ubuntu main"
         sudo apt-get update
         sudo apt-get install -y firefox-esr
 
