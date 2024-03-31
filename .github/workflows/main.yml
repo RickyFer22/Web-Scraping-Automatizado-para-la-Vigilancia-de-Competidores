@@ -40,6 +40,13 @@ jobs:
       run: |
         geckodriver --version
 
+    # Configurar Xvfb
+    - name: Configurar Xvfb
+      run: |
+        sudo apt-get install -y xvfb
+        Xvfb :99 & 
+        echo "DISPLAY=:99.0" >> $GITHUB_ENV
+
     # Ejecutar scripts de scraping
     - name: Ejecutar scripts de scraping
       run: |
