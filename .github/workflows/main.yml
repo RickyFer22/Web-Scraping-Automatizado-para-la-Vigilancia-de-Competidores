@@ -1,44 +1,53 @@
-name: Web Scraping Automatizado
+name: Automatización de scraping web
 
 on:
   schedule:
-    # Frecuencia de ejecución lunes, miércoles y viernes
+    # Ejecutar los lunes, miércoles y viernes
     - cron: '0 0 * * 1,3,5'
 
 jobs:
+
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v2
 
-      # Instalar dependencias
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+    - uses: actions/checkout@v2
 
-      # Instalar Firefox
-      - uses: actions/setup-mozilla@v2
+    # Instalar dependencias
+    - name: Instalar dependencias
+      run: pip install -r requirements.txt
 
-      # Ejecutar scripts
-      - name: Run scraping scripts
-        run: |
-          for file in *.py; do
-            python "$file"
-          done
+    # Instalar Firefox
+    - name: Instalar Firefox
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y firefox-esr
 
-      # Almacenar la base de datos
-      - name: Upload database
-        uses: actions/upload-artifact@v2
-        with:
-          name: precios_competencia.db
-          path: precios_competencia.db
+    # Ejecutar scripts de scraping
+    - name: Ejecutar scripts de scraping
+      run: |
+        for file in *.py; do
+          python "$file"
+        done
 
-      # Generar y subir Excel
-      - name: Generate and upload Excel
-        run: |
-          python 6listas_en_excel.py
-          
-          # Subir archivo Excel
-          actions/upload-artifact@v2
-          with:
-            name: precios_competencia.xlsx
-            path: precios_competencia.xlsx
+    # Subir la base de datos
+    - name: Subir base de datos
+      uses: actions/upload-artifact@v2
+      with:
+        name: precios_competencia.db
+        path: precios_competencia.db
+
+    # Generar y subir Excel
+    - name: Generar y subir Excel
+      run: |
+        python 6listas_en_excel.py
+        
+    # Subir archivo Excel
+    - name: Subir archivo Excel
+      uses: actions/upload-artifact@v2
+      with:
+        name: precios_competencia.xlsx
+        path: precios_competencia.xlsx
+
+
