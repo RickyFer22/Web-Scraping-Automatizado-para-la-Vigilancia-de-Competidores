@@ -1,8 +1,17 @@
 import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
 import sqlite3
 from datetime import datetime
 import os
+
+# Configurar las reintentos para las solicitudes
+session = requests.Session()
+retry = Retry(total=5, backoff_factor=0.1, status_forcelist=[ 500, 502, 503, 504 ])
+adapter = HTTPAdapter(max_retries=retry)
+session.mount('http://', adapter)
+session.mount('https://', adapter)
 
 # Obtener la ruta de la carpeta actual
 current_folder = os.getcwd()
@@ -30,7 +39,12 @@ c.execute(f'''CREATE TABLE IF NOT EXISTS {tabla_nombre}
                 (Fecha TEXT, Descripcion TEXT, Precio TEXT)''')
 
 for base_url in base_urls:
-    response = requests.get(base_url, headers=headers)
+    try:
+        response = session.get(base_url, headers=headers)
+    except requests.exceptions.RequestException as e:
+        print(f"Ocurrió un error al hacer la solicitud GET a {base_url}: {str(e)}")
+        continue
+
     soup = BeautifulSoup(response.content, 'html.parser')
 
     # Obtener todas las páginas de la categoría
@@ -41,7 +55,12 @@ for base_url in base_urls:
         pages = [base_url]
 
     for page_url in pages:
-        response = requests.get(page_url, headers=headers)
+        try:
+            response = session.get(page_url, headers=headers)
+        except requests.exceptions.RequestException as e:
+            print(f"Ocurrió un error al hacer la solicitud GET a {page_url}: {str(e)}")
+            break
+
         soup = BeautifulSoup(response.content, 'html.parser')
 
         # Encuentra todos los divs de los productos
