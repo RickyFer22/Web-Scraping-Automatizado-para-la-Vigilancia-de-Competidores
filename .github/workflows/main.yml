@@ -27,6 +27,20 @@ jobs:
       with:
         firefox-version: 'latest'
 
+    # Descargar geckodriver
+    - name: Descargar geckodriver
+      run: |
+        GECKODRIVER_VERSION=`curl https://github.com/mozilla/geckodriver/releases/latest | grep -Po '(?<=v)[\d.]+(?=")'`
+        wget https://github.com/mozilla/geckodriver/releases/download/v$GECKODRIVER_VERSION/geckodriver-v$GECKODRIVER_VERSION-linux64.tar.gz
+        tar -xvzf geckodriver-v$GECKODRIVER_VERSION-linux64.tar.gz
+        chmod +x geckodriver
+        sudo mv geckodriver /usr/local/bin/
+
+    # Verificar la instalación de geckodriver
+    - name: Verificar la instalación de geckodriver
+      run: |
+        geckodriver --version
+
     # Ejecutar scripts de scraping
     - name: Ejecutar scripts de scraping
       run: |
@@ -52,6 +66,7 @@ jobs:
       with:
         name: precios_competencia.xlsx
         path: precios_competencia.xlsx
+
 
 
 
