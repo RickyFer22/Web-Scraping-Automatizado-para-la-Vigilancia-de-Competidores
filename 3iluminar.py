@@ -1,10 +1,19 @@
 import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
 import sqlite3
 import time
 from selenium import webdriver
 from datetime import datetime
 import os
+
+# Configurar las reintentos para las solicitudes
+session = requests.Session()
+retry = Retry(total=5, backoff_factor=0.1, status_forcelist=[ 500, 502, 503, 504 ])
+adapter = HTTPAdapter(max_retries=retry)
+session.mount('http://', adapter)
+session.mount('https://', adapter)
 
 # Obtener la ruta de la carpeta actual
 current_folder = os.getcwd()
@@ -76,8 +85,7 @@ for base_url in base_urls:
         # Verificar si la página contiene el mensaje de error
         error_message = soup.find(string="¡Ups! No pudimos encontrar esa página.")
         if error_message:
-            print(f"¡Se encontró un error en la página {base_url}! Saltando a la siguiente página.")
-            continue
+            break
 
         process_products(soup)
 
@@ -93,17 +101,16 @@ for base_url in base_urls:
             # Verificar si la página contiene el mensaje de error
             error_message = soup.find(string="¡Ups! No pudimos encontrar esa página.")
             if error_message:
-                print(f"¡Se encontró un error en la página {page_url}! Saltando a la siguiente página.")
                 break
 
             process_products(soup)
     except Exception as e:
-        print(f"Ocurrió un error al procesar la página {base_url}: {str(e)}. Saltando a la siguiente página.")
-
+        continue
 
 # Cerrar la conexión con la base de datos
 conn.close()
 
 # Cerrar el controlador del navegador
 driver.quit()
+
 
