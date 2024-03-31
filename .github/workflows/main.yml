@@ -23,12 +23,9 @@ jobs:
 
     # Instalar Firefox
     - name: Instalar Firefox
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y software-properties-common
-        sudo add-apt-repository "deb https://download.mozilla.org/?product=firefox-esr-latest-ssl&os=ubuntu&lang=en-US ubuntu main"
-        sudo apt-get update
-        sudo apt-get install -y firefox-esr
+      uses: browser-actions/setup-firefox@v1
+      with:
+        firefox-version: 'latest'
 
     # Ejecutar scripts de scraping
     - name: Ejecutar scripts de scraping
@@ -55,5 +52,6 @@ jobs:
       with:
         name: precios_competencia.xlsx
         path: precios_competencia.xlsx
+
 
 
