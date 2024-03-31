@@ -4,6 +4,9 @@ on:
   schedule:
     # Ejecutar los lunes, miércoles y viernes
     - cron: '0 0 * * 1,3,5'
+  
+  # Permitir ejecución manual
+  workflow_dispatch:
 
 jobs:
 
