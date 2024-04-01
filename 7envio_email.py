@@ -7,11 +7,14 @@ from email.mime.base import MIMEBase
 from email import encoders
 
 # Obtener la ruta de la carpeta actual
-current_folder = os.path.dirname(os.path.abspath(__file__))
+current_folder = os.path.dirname(os.path.abspath(_file_))
 
-# **Configuración de variables de entorno**
+# Obtener las credenciales del correo electrónico desde las variables de entorno de GitHub
 correo = os.environ.get("EMAIL_ADDRESS")
 contrasena = os.environ.get("EMAIL_PASSWORD")
+
+# Obtener la dirección de correo electrónico del destinatario desde las variables de entorno de GitHub
+destinatario = os.environ.get("DESTINATARIO_EMAIL")
 
 # Configuración de la conexión SMTP
 server = smtplib.SMTP('smtp.gmail.com', 587)
@@ -21,7 +24,7 @@ server.login(correo, contrasena)
 # Creación del mensaje
 msg = MIMEMultipart()
 msg['From'] = correo
-msg['To'] = "DESTINATARIOS_CORREOS"
+msg['To'] = destinatario  # Utilizando la dirección del destinatario desde las variables de entorno
 msg['Subject'] = "Lista de Precios de la competencia"
 
 # Obtención de la fecha y hora actuales
@@ -43,10 +46,9 @@ with open(file_path, "rb") as attachment:
     msg.attach(part)
 
 # Envío del correo electrónico
-server.sendmail(correo, ["destinatario@correo.com"], msg.as_string())
+server.sendmail(correo, [destinatario], msg.as_string())
 
 # Cierre de la conexión SMTP
 server.quit()
-
 
 
