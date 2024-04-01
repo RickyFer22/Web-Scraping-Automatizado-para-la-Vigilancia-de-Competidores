@@ -3,6 +3,8 @@ from bs4 import BeautifulSoup
 import sqlite3
 from datetime import datetime
 import os
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 # Obtener la ruta de la carpeta actual
 current_folder = os.getcwd()
@@ -25,13 +27,26 @@ headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
 }
 
+# Configurar las reintentos para las solicitudes
+session = requests.Session()
+retry = Retry(total=5, backoff_factor=0.1, status_forcelist=[ 500, 502, 503, 504 ])
+adapter = HTTPAdapter(max_retries=retry)
+session.mount('http://', adapter)
+session.mount('https://', adapter)
+
 # Crear una tabla para almacenar los datos
 tabla_nombre = 'electromisiones'
 c.execute(f'''CREATE TABLE IF NOT EXISTS {tabla_nombre}
                 (Fecha TEXT, Descripcion TEXT, Precio TEXT)''')
 
 for base_url in base_urls:
-    response = requests.get(base_url, headers=headers)
+    try:
+        response = session.get(base_url, headers=headers)
+        response.raise_for_status()  # Raise an HTTPError if the status is 4xx, 5xx
+    except requests.exceptions.RequestException as e:
+        print(f"An error occurred: {e}")
+        continue
+
     soup = BeautifulSoup(response.content, 'html.parser')
 
     # Encuentra todos los divs de los productos
@@ -56,3 +71,4 @@ for base_url in base_urls:
 
 # Cerrar la conexión con la base de datos
 conn.close()
+
