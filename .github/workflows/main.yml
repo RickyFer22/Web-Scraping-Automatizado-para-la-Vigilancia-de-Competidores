@@ -14,8 +14,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
-      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+      EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}  # EMAIL_ADDRESS
+      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}  # EMAIL_PASSWORD
+      DESTINATARIO_EMAIL: ${{ secrets.DESTINATARIO_EMAIL }}  # DESTINATARIO_EMAIL
 
     steps:
 
@@ -76,9 +77,6 @@ jobs:
       with:
         name: precios_competencia.xlsx
         path: precios_competencia.xlsx
-
-
-
 
 
 
