@@ -14,7 +14,11 @@ correo = os.environ.get("EMAIL_ADDRESS")
 contrasena = os.environ.get("EMAIL_PASSWORD")
 
 # Obtener las direcciones de correo electrónico del destinatario desde las variables de entorno
-destinatarios = os.environ.get("DESTINATARIO_EMAIL").split(',')
+destinatarios = os.environ.get("DESTINATARIO_EMAIL")
+if not destinatarios:  # Asegurarse de que destinatarios no es None
+    print("Error: Las direcciones de correo electrónico del destinatario no están definidas.")
+    exit(1)
+destinatarios = destinatarios.split(',')
 
 # Configuración de la conexión SMTP
 server = smtplib.SMTP('smtp.gmail.com', 587)
@@ -51,6 +55,7 @@ for destinatario in destinatarios:
         print(f"Correo electrónico enviado a {destinatario.strip()}")
     except Exception as e:
         print(f"Error al enviar correo electrónico a {destinatario.strip()}: {e}")
+        continue  # Continuar con el siguiente destinatario incluso si el actual falla
 
 # Cierre de la conexión SMTP
 server.quit()
