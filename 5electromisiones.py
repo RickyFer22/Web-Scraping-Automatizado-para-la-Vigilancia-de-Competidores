@@ -42,9 +42,9 @@ c.execute(f'''CREATE TABLE IF NOT EXISTS {tabla_nombre}
 for base_url in base_urls:
     try:
         response = session.get(base_url, headers=headers)
-        response.raise_for_status()  # Raise an HTTPError if the status is 4xx, 5xx
+        response.raise_for_status()  # Lanza una excepción si el estado es 4xx, 5xx
     except requests.exceptions.RequestException as e:
-        print(f"An error occurred: {e}")
+        print(f"Ocurrió un error: {e}")
         continue
 
     soup = BeautifulSoup(response.content, 'html.parser')
