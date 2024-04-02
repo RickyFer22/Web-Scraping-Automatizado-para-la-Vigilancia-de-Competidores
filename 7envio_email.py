@@ -7,13 +7,13 @@ from email.mime.base import MIMEBase
 from email import encoders
 
 # Obtener la ruta de la carpeta actual
-current_folder = os.path.dirname(os.path.abspath(_file_))
+current_folder = os.path.dirname(os.path.abspath(__file__))  # Corregido aquí
 
-# Obtener las credenciales del correo electrónico desde las variables de entorno de GitHub
+# Obtener las credenciales del correo electrónico desde las variables de entorno
 correo = os.environ.get("EMAIL_ADDRESS")
 contrasena = os.environ.get("EMAIL_PASSWORD")
 
-# Obtener la dirección de correo electrónico del destinatario desde las variables de entorno de GitHub
+# Obtener la dirección de correo electrónico del destinatario desde las variables de entorno
 destinatario = os.environ.get("DESTINATARIO_EMAIL")
 
 # Configuración de la conexión SMTP
