@@ -1,5 +1,7 @@
 # **Proyecto Final Bootcamp de Ingeniería de Datos - Código Facilito** 
-![Uploading cover.png…]()
+
+![cover](https://github.com/RickyFer22/Web-Scraping-Automatizado-para-la-Vigilancia-de-Competidores/assets/111261185/0f6a2ca3-f811-4040-97a1-f59d56cfce19)
+
 
 
 ##  Título: Web Scraping Automatizado para la Vigilancia de Competidores
