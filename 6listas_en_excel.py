@@ -8,16 +8,26 @@ current_folder = os.path.dirname(os.path.abspath(__file__))
 
 # Nombre del archivo de la base de datos
 db_filename = 'precios_competencia.db'
-db_path = os.path.join(current_folder, db_filename)
 
-# Verificar si la base de datos existe en el directorio actual
-if not os.path.isfile(db_path):
-    print("No se encontró la base de datos en el directorio actual.")
+# Buscar la base de datos en diferentes directorios
+search_paths = [current_folder, os.path.expanduser("~"), os.path.join(os.path.expanduser("~"), "my_project")]
+for search_path in search_paths:
+    db_path = os.path.join(search_path, db_filename)
+    if os.path.isfile(db_path):
+        break
+else:
+    print("No se encontró la base de datos en ninguno de los directorios.")
     exit()
 
+print(f"Se encontró la base de datos en: {db_path}")
+
 # Crear la conexión con la base de datos SQLite
-conn = sqlite3.connect(db_path)
-c = conn.cursor()
+try:
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
+except sqlite3.Error as e:
+    print(f"Error al conectarse a la base de datos: {e}")
+    exit()
 
 # Obtener nombres de las tablas en la base de datos
 c.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;")
@@ -30,19 +40,22 @@ wb = Workbook()
 for tabla in tablas:
     nombre_tabla = tabla[0]
     ws = wb.create_sheet(title=nombre_tabla)  # Crear una nueva hoja con el nombre de la tabla
-    
+
     # Obtener la fecha máxima
     c.execute(f"SELECT MAX(fecha) FROM {nombre_tabla}")
     fecha_maxima = c.fetchone()[0]
-    
+
     # Filtrar por fecha
     c.execute(f"SELECT * FROM {nombre_tabla} WHERE fecha >= ? ORDER BY descripcion ASC", (fecha_maxima,))
     rows = c.fetchall()
+
     # Obtener los nombres de las columnas
     column_names = [description[0] for description in c.description]
+
     # Escribir los nombres de las columnas en la primera fila
     for col_index, col_name in enumerate(column_names):
         ws.cell(row=1, column=col_index+1, value=col_name)
+
     # Escribir los datos en las filas siguientes
     for row_index, row in enumerate(rows):
         for col_index, value in enumerate(row):
