@@ -34,6 +34,11 @@ c.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;")
 # Ordenar por nombre de tabla
 tablas = c.fetchall()
 
+# Eliminar el archivo Excel existente (si existe)
+excel_file_path = os.path.join(current_folder, "precios_competencia.xlsx")
+if os.path.exists(excel_file_path):
+    os.remove(excel_file_path)
+
 # Crear un nuevo archivo Excel
 wb = Workbook()
 
@@ -78,7 +83,6 @@ if len(wb.sheetnames) > 1:
     wb.remove(wb["Sheet"])
 
 # Guardar el archivo Excel en el mismo directorio que la base de datos
-excel_file_path = os.path.join(current_folder, "precios_competencia.xlsx")
 wb.save(excel_file_path)
 
 # Cerrar la conexión con la base de datos
