@@ -21,6 +21,9 @@ else:
 
 print(f"Se encontró la base de datos en: {db_path}")
 
+# Obtener la fecha actual
+current_date = datetime.date.today()
+
 # Crear la conexión con la base de datos SQLite
 try:
     conn = sqlite3.connect(db_path)
@@ -46,12 +49,8 @@ for tabla in tablas:
     nombre_tabla = tabla[0]
     ws = wb.create_sheet(title=nombre_tabla)  # Crear una nueva hoja con el nombre de la tabla
 
-    # Obtener la fecha máxima
-    c.execute(f"SELECT MAX(fecha) FROM {nombre_tabla}")
-    fecha_maxima = c.fetchone()[0]
-
-    # Filtrar por fecha
-    c.execute(f"SELECT * FROM {nombre_tabla} WHERE fecha >= ? ORDER BY descripcion ASC", (fecha_maxima,))
+    # Filtrar por la fecha actual
+    c.execute(f"SELECT * FROM {nombre_tabla} WHERE fecha = ? ORDER BY descripcion ASC", (current_date,))
     rows = c.fetchall()
 
     # Obtener los nombres de las columnas
