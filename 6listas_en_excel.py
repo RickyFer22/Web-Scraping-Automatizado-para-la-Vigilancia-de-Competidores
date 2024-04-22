@@ -49,8 +49,8 @@ for tabla in tablas:
     nombre_tabla = tabla[0]
     ws = wb.create_sheet(title=nombre_tabla)  # Crear una nueva hoja con el nombre de la tabla
 
-    # Filtrar por la fecha actual
-    c.execute(f"SELECT * FROM {nombre_tabla} WHERE fecha = ? ORDER BY descripcion ASC", (current_date,))
+    # Filtrar por la fecha actual y excluir filas con fecha nula
+    c.execute(f"SELECT * FROM {nombre_tabla} WHERE fecha = ? AND fecha IS NOT NULL ORDER BY descripcion ASC", (current_date,))
     rows = c.fetchall()
 
     # Obtener los nombres de las columnas
@@ -63,7 +63,7 @@ for tabla in tablas:
     # Escribir los datos en las filas siguientes
     for row_index, row in enumerate(rows):
         for col_index, value in enumerate(row):
-            ws.cell(row=row_index+2, column=col_index+1, value=value)  # Comenzar desde la segunda fila
+            ws.cell(row=row_index+2, column=col_index+1, value=value)
 
     # Ajustar el ancho de las columnas
     for col in ws.columns:
@@ -77,7 +77,7 @@ for tabla in tablas:
         adjusted_width = (max_length + 2) * 1.2
         ws.column_dimensions[col[0].column_letter].width = adjusted_width
 
-# Eliminar la hoja inicial por defecto "Sheet" solo si hay más de una hoja
+# Eliminar la hoja inicial por defecto "Sheet" si hay más de una hoja
 if len(wb.sheetnames) > 1:
     wb.remove(wb["Sheet"])
 
