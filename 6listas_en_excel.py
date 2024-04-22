@@ -1,7 +1,6 @@
 import sqlite3
 from openpyxl import Workbook
 import os
-import datetime
 
 # Obtener la ruta del directorio actual del script
 current_folder = os.path.dirname(os.path.abspath(__file__))
@@ -21,9 +20,6 @@ else:
 
 print(f"Se encontró la base de datos en: {db_path}")
 
-# Obtener la fecha actual
-current_date = datetime.date.today()
-
 # Crear la conexión con la base de datos SQLite
 try:
     conn = sqlite3.connect(db_path)
@@ -34,7 +30,6 @@ except sqlite3.Error as e:
 
 # Obtener nombres de las tablas en la base de datos
 c.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;")
-# Ordenar por nombre de tabla
 tablas = c.fetchall()
 
 # Eliminar el archivo Excel existente (si existe)
@@ -47,18 +42,19 @@ wb = Workbook()
 
 for tabla in tablas:
     nombre_tabla = tabla[0]
-    ws = wb.create_sheet(title=nombre_tabla)  # Crear una nueva hoja con el nombre de la tabla
-
-    # Filtrar por la fecha actual y excluir filas con fecha nula
-    c.execute(f"SELECT * FROM {nombre_tabla} WHERE fecha = ? AND fecha IS NOT NULL ORDER BY descripcion ASC", (current_date,))
-    rows = c.fetchall()
+    ws = wb.create_sheet(title=nombre_tabla)
 
     # Obtener los nombres de las columnas
-    column_names = [description[0] for description in c.description]
+    c.execute(f"PRAGMA table_info({nombre_tabla})")
+    column_names = [info[1] for info in c.fetchall()]
 
     # Escribir los nombres de las columnas en la primera fila
     for col_index, col_name in enumerate(column_names):
         ws.cell(row=1, column=col_index+1, value=col_name)
+
+    # Obtener todos los datos de la tabla
+    c.execute(f"SELECT * FROM {nombre_tabla}")
+    rows = c.fetchall()
 
     # Escribir los datos en las filas siguientes
     for row_index, row in enumerate(rows):
