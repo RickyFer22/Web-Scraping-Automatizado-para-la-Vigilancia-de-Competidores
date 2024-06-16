@@ -48,18 +48,30 @@ for tabla in tablas:
     c.execute(f"PRAGMA table_info({nombre_tabla})")
     column_names = [info[1] for info in c.fetchall()]
 
+    # Verificar si la columna "fecha" existe en la tabla
+    if 'fecha' not in column_names:
+        print(f"No se encontró una columna de fecha en la tabla {nombre_tabla}.")
+        continue
+
+    # Convertir la columna de fecha a tipo date (si no está ya en ese formato)
+    c.execute(f"UPDATE {nombre_tabla} SET fecha = date(fecha) WHERE typeof(fecha) != 'date'")
+
+    # Obtener la fila con la fecha más reciente
+    c.execute(f"""
+        SELECT *
+        FROM {nombre_tabla}
+        WHERE fecha = (SELECT MAX(fecha) FROM {nombre_tabla})
+    """)
+    row = c.fetchone()
+
     # Escribir los nombres de las columnas en la primera fila
     for col_index, col_name in enumerate(column_names):
         ws.cell(row=1, column=col_index+1, value=col_name)
 
-    # Obtener todos los datos de la tabla
-    c.execute(f"SELECT * FROM {nombre_tabla}")
-    rows = c.fetchall()
-
-    # Escribir los datos en las filas siguientes
-    for row_index, row in enumerate(rows):
+    # Escribir los datos de la fila más reciente en la segunda fila
+    if row:
         for col_index, value in enumerate(row):
-            ws.cell(row=row_index+2, column=col_index+1, value=value)
+            ws.cell(row=2, column=col_index+1, value=value)
 
     # Ajustar el ancho de las columnas
     for col in ws.columns:
@@ -82,3 +94,4 @@ wb.save(excel_file_path)
 
 # Cerrar la conexión con la base de datos
 conn.close()
+
