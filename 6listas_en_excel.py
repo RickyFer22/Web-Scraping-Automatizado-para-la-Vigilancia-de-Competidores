@@ -72,6 +72,8 @@ for tabla in tablas:
     if row:
         for col_index, value in enumerate(row):
             ws.cell(row=2, column=col_index+1, value=value)
+    else:
+        print(f"No se encontraron datos recientes en la tabla {nombre_tabla}.")
 
     # Ajustar el ancho de las columnas
     for col in ws.columns:
