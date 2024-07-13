@@ -9,7 +9,6 @@ on:
   workflow_dispatch:
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
 
@@ -19,50 +18,48 @@ jobs:
       DESTINATARIO_EMAIL: ${{ secrets.DESTINATARIO_EMAIL }}  # DESTINATARIO_EMAIL
 
     steps:
+      - uses: actions/checkout@v2
 
-    - uses: actions/checkout@v2
+      # Instalar dependencias
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
 
-    # Instalar dependencias
-    - name: Instalar dependencias
-      run: pip install -r requirements.txt
+      # Instalar Firefox
+      - name: Instalar Firefox
+        uses: browser-actions/setup-firefox@v1
+        with:
+          firefox-version: 'latest'
 
-    # Instalar Firefox
-    - name: Instalar Firefox
-      uses: browser-actions/setup-firefox@v1
-      with:
-        firefox-version: 'latest'
+      # Descargar geckodriver
+      - name: Descargar geckodriver
+        run: |
+          wget https://github.com/mozilla/geckodriver/releases/download/v0.34.0/geckodriver-v0.34.0-linux64.tar.gz
+          tar -xvzf geckodriver-v0.34.0-linux64.tar.gz
+          chmod +x geckodriver
+          sudo mv geckodriver /usr/local/bin/
+          
+      # Verificar la instalación de geckodriver
+      - name: Verificar la instalación de geckodriver
+        run: geckodriver --version
 
-    # Descargar geckodriver
-    - name: Descargar geckodriver
-      run: |
-        wget https://github.com/mozilla/geckodriver/releases/download/v0.34.0/geckodriver-v0.34.0-linux64.tar.gz
-        tar -xvzf geckodriver-v0.34.0-linux64.tar.gz
-        chmod +x geckodriver
-        sudo mv geckodriver /usr/local/bin/
-        
-    # Verificar la instalación de geckodriver
-    - name: Verificar la instalación de geckodriver
-      run: |
-        geckodriver --version
-        
-    # Configurar Xvfb
-    - name: Configurar Xvfb
-      run: |
-        sudo apt-get install -y xvfb
-        Xvfb :99 & 
-        echo "DISPLAY=:99.0" >> $GITHUB_ENV
-        
-    # Ejecutar scripts de scraping
-    - name: Ejecutar scripts de scraping
-      run: |
-        for file in *.py; do
-          python "$file"
-        done
-        
-    # Verificar el contenido de la base de datos
-    - name: Verificar contenido de la base de datos
-      run: |
-        python - <<EOF
+      # Configurar Xvfb
+      - name: Configurar Xvfb
+        run: |
+          sudo apt-get install -y xvfb
+          Xvfb :99 & 
+          echo "DISPLAY=:99.0" >> $GITHUB_ENV
+
+      # Ejecutar scripts de scraping
+      - name: Ejecutar scripts de scraping
+        run: |
+          for file in *.py; do
+            python "$file"
+          done
+
+      # Verificar el contenido de la base de datos
+      - name: Verificar contenido de la base de datos
+        run: |
+          python - <<EOF
 import sqlite3
 
 # Conectar a la base de datos
@@ -82,23 +79,24 @@ else:
 conn.close()
 EOF
 
-    # Subir la base de datos
-    - name: Subir base de datos
-      uses: actions/upload-artifact@v2
-      with:
-        name: precios_competencia.db
-        path: precios_competencia.db
+      # Subir la base de datos
+      - name: Subir base de datos
+        uses: actions/upload-artifact@v2
+        with:
+          name: precios_competencia.db
+          path: precios_competencia.db
 
-    # Generar y subir Excel
-    - name: Generar y subir Excel
-      run: python 6listas_en_excel.py
-        
-    # Subir archivo Excel
-    - name: Subir archivo Excel
-      uses: actions/upload-artifact@v2
-      with:
-        name: precios_competencia.xlsx
-        path: precios_competencia.xlsx
+      # Generar y subir Excel
+      - name: Generar y subir Excel
+        run: python 6listas_en_excel.py
+
+      # Subir archivo Excel
+      - name: Subir archivo Excel
+        uses: actions/upload-artifact@v2
+        with:
+          name: precios_competencia.xlsx
+          path: precios_competencia.xlsx
+
 
 
 
