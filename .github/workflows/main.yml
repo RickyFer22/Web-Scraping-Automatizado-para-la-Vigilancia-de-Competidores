@@ -61,7 +61,26 @@ jobs:
         
     # Verificar el contenido de la base de datos
     - name: Verificar contenido de la base de datos
-      run: python verificar_base_de_datos.py
+      run: |
+        python - <<EOF
+import sqlite3
+
+# Conectar a la base de datos
+conn = sqlite3.connect('precios_competencia.db')
+c = conn.cursor()
+
+# Verificar el contenido de la tabla 'productos'
+c.execute('SELECT * FROM productos')
+rows = c.fetchall()
+
+if rows:
+    for row in rows:
+        print(row)
+else:
+    print('No hay datos en la base de datos.')
+
+conn.close()
+EOF
 
     # Subir la base de datos
     - name: Subir base de datos
