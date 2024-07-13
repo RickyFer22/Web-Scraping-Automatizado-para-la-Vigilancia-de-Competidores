@@ -1,7 +1,6 @@
 import sqlite3
 from openpyxl import Workbook
 import os
-import datetime
 
 # Obtener la ruta del directorio actual del script
 current_folder = os.path.dirname(os.path.abspath(__file__))
@@ -23,25 +22,6 @@ c = conn.cursor()
 c.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;")
 tablas = c.fetchall()
 
-# Encontrar la fecha más reciente en todas las tablas
-max_fecha = None
-for tabla in tablas:
-    nombre_tabla = tabla[0]
-    c.execute(f"SELECT MAX(fecha) FROM {nombre_tabla}")
-    fecha_maxima = c.fetchone()[0]
-    if fecha_maxima:
-        fecha_maxima = datetime.datetime.strptime(fecha_maxima, '%d/%m/%Y')
-        if max_fecha is None or fecha_maxima > max_fecha:
-            max_fecha = fecha_maxima
-
-# Si no se encontró ninguna fecha, salir
-if max_fecha is None:
-    print("No se encontraron fechas en las tablas.")
-    exit()
-
-# Convertir la fecha más reciente al formato de cadena necesario
-max_fecha_str = max_fecha.strftime('%d/%m/%Y')
-
 # Crear un nuevo archivo Excel
 wb = Workbook()
 
@@ -49,13 +29,8 @@ for tabla in tablas:
     nombre_tabla = tabla[0]
     ws = wb.create_sheet(title=nombre_tabla)  # Crear una nueva hoja con el nombre de la tabla
     
-    # Filtrar por la fecha más reciente
-    c.execute(f"""
-        SELECT DISTINCT fecha, descripcion, precio 
-        FROM {nombre_tabla} 
-        WHERE fecha = ? 
-        ORDER BY fecha DESC, descripcion ASC
-    """, (max_fecha_str,))
+    # Obtener todos los datos de la tabla
+    c.execute(f"SELECT * FROM {nombre_tabla}")
     rows = c.fetchall()
     
     if rows:
@@ -81,7 +56,7 @@ for tabla in tablas:
             adjusted_width = (max_length + 2) * 1.2
             ws.column_dimensions[col[0].column_letter].width = adjusted_width
     else:
-        print(f"No se encontraron datos para la tabla {nombre_tabla} con fecha {max_fecha_str}.")
+        print(f"No se encontraron datos para la tabla {nombre_tabla}.")
 
 # Eliminar la hoja inicial por defecto "Sheet" solo si hay más de una hoja
 if len(wb.sheetnames) > 1:
