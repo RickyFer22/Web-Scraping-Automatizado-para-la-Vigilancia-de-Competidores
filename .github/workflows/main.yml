@@ -59,7 +59,7 @@ jobs:
       # Verificar el contenido de la base de datos
       - name: Verificar contenido de la base de datos
         run: |
-          python - <<EOF
+          python <<EOF
 import sqlite3
 
 # Conectar a la base de datos
@@ -88,7 +88,7 @@ EOF
 
       # Generar y subir Excel
       - name: Generar y subir Excel
-        run: python 6listas_en_excel.py
+        run: python listas_en_excel.py
 
       # Subir archivo Excel
       - name: Subir archivo Excel
