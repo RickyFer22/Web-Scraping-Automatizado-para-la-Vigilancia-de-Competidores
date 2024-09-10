@@ -57,7 +57,7 @@ jobs:
         done
     # Subir la base de datos
     - name: Subir base de datos
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: precios_competencia.db
         path: precios_competencia.db
@@ -69,11 +69,10 @@ jobs:
         
     # Subir archivo Excel
     - name: Subir archivo Excel
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: precios_competencia.xlsx
         path: precios_competencia.xlsx
-
 
 
 
