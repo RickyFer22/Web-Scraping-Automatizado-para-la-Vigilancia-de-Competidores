@@ -2,38 +2,40 @@ name: Automatización de scraping web
 
 on:
   schedule:
-    - cron: '0 0 * * 1'  # Ejecutar todos los lunes
-  
-  workflow_dispatch:      # Permitir ejecución manual
+    # Ejecutar todos los lunes
+    - cron: '0 0 * * 1'
+
+  # Permitir ejecución manual
+  workflow_dispatch:
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
 
     env:
-      EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
-      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-      DESTINATARIO_EMAIL: ${{ secrets.DESTINATARIO_EMAIL }}
-      SCP_USER: ${{ secrets.SCP_USER }}
-      SCP_HOST: ${{ secrets.SCP_HOST }}
-      SCP_PATH: ${{ secrets.SCP_PATH }}
+      EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}  # EMAIL_ADDRESS
+      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}  # EMAIL_PASSWORD
+      DESTINATARIO_EMAIL: ${{ secrets.DESTINATARIO_EMAIL }}  # DESTINATARIO_EMAIL
 
     steps:
 
-    - name: Checkout code
+    # 1. Clonar el repositorio manualmente (reemplazo de actions/checkout@v2)
+    - name: Clonar el repositorio
       run: |
         git clone https://github.com/RickyFer22/Web-Scraping-Automatizado-para-la-Vigilancia-de-Competidores.git .
         git checkout ${{ github.ref }}
 
+    # 2. Instalar dependencias
     - name: Instalar dependencias
       run: pip install -r requirements.txt
 
+    # 3. Instalar Firefox (reemplazo de browser-actions/setup-firefox@v1)
     - name: Instalar Firefox
       run: |
         sudo apt-get update
         sudo apt-get install -y firefox
 
+    # 4. Descargar y configurar Geckodriver
     - name: Descargar geckodriver
       run: |
         wget https://github.com/mozilla/geckodriver/releases/download/v0.34.0/geckodriver-v0.34.0-linux64.tar.gz
@@ -41,30 +43,50 @@ jobs:
         chmod +x geckodriver
         sudo mv geckodriver /usr/local/bin/
 
-    - name: Verificar la instalación de geckodriver
+    # 5. Verificar instalación de Geckodriver
+    - name: Verificar instalación de geckodriver
       run: geckodriver --version
 
+    # 6. Configurar Xvfb para entorno sin pantalla
     - name: Configurar Xvfb
       run: |
         sudo apt-get install -y xvfb
         Xvfb :99 &
         echo "DISPLAY=:99.0" >> $GITHUB_ENV
 
+    # 7. Ejecutar scripts de scraping
     - name: Ejecutar scripts de scraping
       run: |
         for file in *.py; do
-          python "$file"
+          if [ -f "$file" ]; then
+            python "$file"
+          fi
         done
 
-    - name: Subir base de datos via scp
-      run: scp precios_competencia.db $SCP_USER@$SCP_HOST:$SCP_PATH
-
-    - name: Generar y subir Excel
+    # 8. Enviar base de datos y Excel por correo (reemplazo de actions/upload-artifact@v3)
+    - name: Enviar artefactos por correo
+      env:
+        EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
+        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        DESTINATARIO_EMAIL: ${{ secrets.DESTINATARIO_EMAIL }}
       run: |
-        python 6listas_en_excel.py
+        # Crear un mensaje de correo
+        echo "Asunto: Resultados del scraping" > email.txt
+        echo "Estimado usuario," >> email.txt
+        echo "Adjuntamos los resultados del scraping en este correo." >> email.txt
 
-    - name: Subir archivo Excel via scp
-      run: scp precios_competencia.xlsx $SCP_USER@$SCP_HOST:$SCP_PATH
+        # Adjuntar los archivos
+        echo "Adjuntando precios_competencia.db y precios_competencia.xlsx..." >> email.txt
 
+        # Instalar sendmail y enviar el correo
+        sudo apt-get install -y ssmtp
+        echo "Configurando ssmtp..."
+        echo "AuthUser=$EMAIL_ADDRESS" >> /etc/ssmtp/ssmtp.conf
+        echo "AuthPass=$EMAIL_PASSWORD" >> /etc/ssmtp/ssmtp.conf
+        echo "mailhub=smtp.gmail.com:587" >> /etc/ssmtp/ssmtp.conf
+        echo "UseSTARTTLS=YES" >> /etc/ssmtp/ssmtp.conf
 
+        # Enviar el correo
+        echo "Enviando correo..."
+        ssmtp $DESTINATARIO_EMAIL < email.txt
 
