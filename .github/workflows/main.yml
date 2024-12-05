@@ -15,6 +15,9 @@ jobs:
       EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
       EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
       DESTINATARIO_EMAIL: ${{ secrets.DESTINATARIO_EMAIL }}
+      SCP_USER: ${{ secrets.SCP_USER }}
+      SCP_HOST: ${{ secrets.SCP_HOST }}
+      SCP_PATH: ${{ secrets.SCP_PATH }}
 
     steps:
 
@@ -53,21 +56,15 @@ jobs:
           python "$file"
         done
 
-    - name: Subir base de datos
-      uses: actions/upload-artifact@v3
-      with:
-        name: precios_competencia.db
-        path: precios_competencia.db
+    - name: Subir base de datos via scp
+      run: scp precios_competencia.db $SCP_USER@$SCP_HOST:$SCP_PATH
 
     - name: Generar y subir Excel
       run: |
         python 6listas_en_excel.py
 
-    - name: Subir archivo Excel
-      uses: actions/upload-artifact@v3
-      with:
-        name: precios_competencia.xlsx
-        path: precios_competencia.xlsx
+    - name: Subir archivo Excel via scp
+      run: scp precios_competencia.xlsx $SCP_USER@$SCP_HOST:$SCP_PATH
 
 
 
