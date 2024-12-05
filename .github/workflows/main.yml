@@ -2,10 +2,7 @@ name: Automatización de scraping web
 
 on:
   schedule:
-    # Ejecutar todos los lunes
-    - cron: '0 0 * * 1'
-
-  # Permitir ejecución manual
+    - cron: '0 0 * * 1' # Ejecutar todos los lunes
   workflow_dispatch:
 
 jobs:
@@ -13,48 +10,52 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}  # EMAIL_ADDRESS
-      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}  # EMAIL_PASSWORD
-      DESTINATARIO_EMAIL: ${{ secrets.DESTINATARIO_EMAIL }}  # DESTINATARIO_EMAIL
+      EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
+      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+      DESTINATARIO_EMAIL: ${{ secrets.DESTINATARIO_EMAIL }}
 
     steps:
-
-    # 1. Clonar el repositorio manualmente (reemplazo de actions/checkout@v2)
+    # Clonar el repositorio
     - name: Clonar el repositorio
       run: |
         git clone https://github.com/RickyFer22/Web-Scraping-Automatizado-para-la-Vigilancia-de-Competidores.git .
         git checkout ${{ github.ref }}
 
-    # 2. Instalar dependencias
+    # Instalar dependencias
     - name: Instalar dependencias
       run: pip install -r requirements.txt
 
-    # 3. Instalar Firefox (reemplazo de browser-actions/setup-firefox@v1)
-    - name: Instalar Firefox
+    # Instalar Google Chrome
+    - name: Instalar Google Chrome
       run: |
         sudo apt-get update
-        sudo apt-get install -y firefox
+        sudo apt-get install -y google-chrome-stable
 
-    # 4. Descargar y configurar Geckodriver
-    - name: Descargar geckodriver
+    # Verificar instalación de Chrome
+    - name: Verificar instalación de Chrome
+      run: google-chrome --version
+
+    # Descargar ChromeDriver
+    - name: Descargar ChromeDriver
       run: |
-        wget https://github.com/mozilla/geckodriver/releases/download/v0.34.0/geckodriver-v0.34.0-linux64.tar.gz
-        tar -xvzf geckodriver-v0.34.0-linux64.tar.gz
-        chmod +x geckodriver
-        sudo mv geckodriver /usr/local/bin/
+        CHROME_DRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
+        wget https://chromedriver.storage.googleapis.com/$CHROME_DRIVER_VERSION/chromedriver_linux64.zip
+        unzip chromedriver_linux64.zip
+        chmod +x chromedriver
+        sudo mv chromedriver /usr/local/bin/
 
-    # 5. Verificar instalación de Geckodriver
-    - name: Verificar instalación de geckodriver
-      run: geckodriver --version
+    # Verificar instalación de ChromeDriver
+    - name: Verificar instalación de ChromeDriver
+      run: chromedriver --version
 
-    # 6. Configurar Xvfb para entorno sin pantalla
+    # Configurar Xvfb para entorno sin pantalla
     - name: Configurar Xvfb
       run: |
         sudo apt-get install -y xvfb
         Xvfb :99 &
-        echo "DISPLAY=:99.0" >> $GITHUB_ENV
+        export DISPLAY=:99.0
 
-    # 7. Ejecutar scripts de scraping
+    # Ejecutar scripts de scraping
     - name: Ejecutar scripts de scraping
       run: |
         for file in *.py; do
@@ -63,31 +64,52 @@ jobs:
           fi
         done
 
-    # 8. Enviar base de datos y Excel por correo (reemplazo de actions/upload-artifact@v3)
-    - name: Enviar artefactos por correo
+    # Generar Excel de resultados
+    - name: Generar y guardar Excel
+      run: python 6listas_en_excel.py
+
+    # Enviar el archivo Excel por correo electrónico
+    - name: Enviar resultados por correo
       env:
         EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
         EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
         DESTINATARIO_EMAIL: ${{ secrets.DESTINATARIO_EMAIL }}
       run: |
-        # Crear un mensaje de correo
-        echo "Asunto: Resultados del scraping" > email.txt
-        echo "Estimado usuario," >> email.txt
-        echo "Adjuntamos los resultados del scraping en este correo." >> email.txt
+        python - <<EOF
+        import smtplib
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.base import MIMEBase
+        from email import encoders
 
-        # Adjuntar los archivos
-        echo "Adjuntando precios_competencia.db y precios_competencia.xlsx..." >> email.txt
+        # Configuración del correo
+        email_address = "${{ secrets.EMAIL_ADDRESS }}"
+        email_password = "${{ secrets.EMAIL_PASSWORD }}"
+        destinatario = "${{ secrets.DESTINATARIO_EMAIL }}"
+        asunto = "Resultados de Scraping"
+        mensaje = "Se adjuntan los resultados del scraping en formato Excel."
 
-        # Instalar sendmail y enviar el correo
-        sudo apt-get install -y ssmtp
-        echo "Configurando ssmtp..."
-        echo "AuthUser=$EMAIL_ADDRESS" >> /etc/ssmtp/ssmtp.conf
-        echo "AuthPass=$EMAIL_PASSWORD" >> /etc/ssmtp/ssmtp.conf
-        echo "mailhub=smtp.gmail.com:587" >> /etc/ssmtp/ssmtp.conf
-        echo "UseSTARTTLS=YES" >> /etc/ssmtp/ssmtp.conf
+        # Crear el mensaje
+        msg = MIMEMultipart()
+        msg['From'] = email_address
+        msg['To'] = destinatario
+        msg['Subject'] = asunto
+        msg.attach(MIMEBase('application', 'octet-stream'))
 
-        # Enviar el correo
-        echo "Enviando correo..."
-        ssmtp $DESTINATARIO_EMAIL < email.txt
+        # Adjuntar archivo
+        archivo = "precios_competencia.xlsx"
+        with open(archivo, 'rb') as adj:
+            parte = MIMEBase('application', 'octet-stream')
+            parte.set_payload(adj.read())
+        encoders.encode_base64(parte)
+        parte.add_header('Content-Disposition', f'attachment; filename={archivo}')
+        msg.attach(parte)
+
+        # Enviar correo
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()
+            server.login(email_address, email_password)
+            server.sendmail(email_address, destinatario, msg.as_string())
+        EOF
+
 
 
