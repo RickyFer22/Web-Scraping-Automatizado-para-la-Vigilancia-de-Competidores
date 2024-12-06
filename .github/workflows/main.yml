@@ -25,35 +25,31 @@ jobs:
     - name: Instalar dependencias
       run: pip install -r requirements.txt
 
-    # Instalar Google Chrome
-    - name: Instalar Google Chrome
+    # Instalar Firefox
+    - name: Instalar Firefox
+      uses: browser-actions/setup-firefox@v1
+      with:
+        firefox-version: 'latest'
+
+    # Descargar GeckoDriver
+    - name: Descargar GeckoDriver
       run: |
-        sudo apt-get update
-        sudo apt-get install -y google-chrome-stable
+        GECKODRIVER_VERSION=$(curl -s https://api.github.com/repos/mozilla/geckodriver/releases/latest | grep tag_name | cut -d '"' -f 4)
+        wget https://github.com/mozilla/geckodriver/releases/download/$GECKODRIVER_VERSION/geckodriver-$GECKODRIVER_VERSION-linux64.tar.gz
+        tar -xvzf geckodriver-$GECKODRIVER_VERSION-linux64.tar.gz
+        chmod +x geckodriver
+        sudo mv geckodriver /usr/local/bin/
 
-    # Verificar instalación de Chrome
-    - name: Verificar instalación de Chrome
-      run: google-chrome --version
-
-    # Descargar ChromeDriver
-    - name: Descargar ChromeDriver
-      run: |
-        CHROME_DRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
-        wget https://chromedriver.storage.googleapis.com/$CHROME_DRIVER_VERSION/chromedriver_linux64.zip
-        unzip chromedriver_linux64.zip
-        chmod +x chromedriver
-        sudo mv chromedriver /usr/local/bin/
-
-    # Verificar instalación de ChromeDriver
-    - name: Verificar instalación de ChromeDriver
-      run: chromedriver --version
+    # Verificar instalación de GeckoDriver
+    - name: Verificar instalación de GeckoDriver
+      run: geckodriver --version
 
     # Configurar Xvfb para entorno sin pantalla
     - name: Configurar Xvfb
       run: |
         sudo apt-get install -y xvfb
         Xvfb :99 &
-        export DISPLAY=:99.0
+        echo "DISPLAY=:99.0" >> $GITHUB_ENV
 
     # Ejecutar scripts de scraping
     - name: Ejecutar scripts de scraping
@@ -110,7 +106,6 @@ jobs:
             server.login(email_address, email_password)
             server.sendmail(email_address, destinatario, msg.as_string())
         EOF
-
 
 
 
