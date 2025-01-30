@@ -5,12 +5,17 @@ from bs4 import BeautifulSoup
 import sqlite3
 import time
 from selenium import webdriver
+from selenium.webdriver.firefox.service import Service
+from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime
 import os
 
 # Configurar las reintentos para las solicitudes
 session = requests.Session()
-retry = Retry(total=5, backoff_factor=0.1, status_forcelist=[ 500, 502, 503, 504 ])
+retry = Retry(total=5, backoff_factor=0.3, status_forcelist=[500, 502, 503, 504])
 adapter = HTTPAdapter(max_retries=retry)
 session.mount('http://', adapter)
 session.mount('https://', adapter)
@@ -38,79 +43,95 @@ tabla_nombre = 'iluminar'
 c.execute(f'''CREATE TABLE IF NOT EXISTS {tabla_nombre}
                 (Fecha TEXT, Descripcion TEXT, Precio TEXT)''')
 
-# Iniciar el controlador de navegador (en este caso, Firefox)
-driver = webdriver.Firefox()
+# Configurar opciones de Selenium para evitar errores de ejecución
+options = Options()
+options.headless = True  # Ejecutar en modo sin interfaz gráfica
+
+# Iniciar el controlador del navegador
+try:
+    driver = webdriver.Firefox(options=options)
+except Exception as e:
+    print(f"Error al iniciar el navegador: {e}")
+    conn.close()
+    exit()
 
 # Obtener las URLs de las páginas adicionales
-additional_pages = [f"{base_url}page/{i}/" for base_url in base_urls for i in range(2, 100)]  # Cambia el rango si es necesario
+additional_pages = [f"{base_url}page/{i}/" for base_url in base_urls for i in range(2, 100)]  # Ajusta el rango si es necesario
 
 # Función para procesar productos en una página
 def process_products(soup):
-    product_divs = soup.select("#main > div > div.col.large-9 > div > div.products.row.row-small.large-columns-4.medium-columns-3.small-columns-2.has-shadow.row-box-shadow-1.row-box-shadow-3-hover > div.product-small.col.has-hover.product")
+    product_divs = soup.select("div.product-small.col.has-hover.product")
+
+    if not product_divs:
+        print("No se encontraron productos en la página.")
+        return
 
     for product_div in product_divs:
         fecha_actual = datetime.now().strftime("%d/%m/%Y")
-        product_name_element = product_div.select_one("div.box-text.box-text-products.text-center.grid-style-2 > div.title-wrapper > p.name.product-title.woocommerce-loop-product__title > a")
+        product_name_element = product_div.select_one("p.name.product-title.woocommerce-loop-product__title > a")
         product_name = product_name_element.text.strip() if product_name_element else "No disponible"
-        price_element = product_div.select_one("div.box-text.box-text-products.text-center.grid-style-2 > div.price-wrapper > span > span > bdi")
+        price_element = product_div.select_one("div.price-wrapper > span > span > bdi")
         product_price = price_element.text.strip() if price_element else "No disponible"
 
         # Insertar los datos en la tabla
         c.execute(f"INSERT INTO {tabla_nombre} (Fecha, Descripcion, Precio) VALUES (?, ?, ?)", (fecha_actual, product_name, product_price))
         conn.commit()
 
-for base_url in base_urls:
-    try:
-        # Visitar la página principal de la categoría
-        driver.get(base_url)
+try:
+    for base_url in base_urls:
+        try:
+            print(f"Accediendo a: {base_url}")
+            driver.get(base_url)
 
-        last_height = driver.execute_script("return document.body.scrollHeight")
-        while True:
-            # Desplazarse hacia abajo
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
-            # Esperar a que se cargue el nuevo contenido
-            time.sleep(5)
+            last_height = driver.execute_script("return document.body.scrollHeight")
+            while True:
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                time.sleep(3)
 
-            # Calcular la nueva altura y mover el scroll
-            new_height = driver.execute_script("return document.body.scrollHeight")
-            if new_height == last_height:
-                break
-            last_height = new_height
+                new_height = driver.execute_script("return document.body.scrollHeight")
+                if new_height == last_height:
+                    break
+                last_height = new_height
 
-        # Procesar la página actual
-        html = driver.page_source
-        soup = BeautifulSoup(html, 'html.parser')
-
-        # Verificar si la página contiene el mensaje de error
-        error_message = soup.find(string="¡Ups! No pudimos encontrar esa página.")
-        if error_message:
-            break
-
-        process_products(soup)
-
-        # Visitar páginas adicionales si existen
-        for page_url in additional_pages:
-            driver.get(page_url)
-            time.sleep(5)  # Esperar a que se cargue la página
-
-            # Procesar la página adicional
             html = driver.page_source
             soup = BeautifulSoup(html, 'html.parser')
 
-            # Verificar si la página contiene el mensaje de error
+            # Verificar si la página contiene un mensaje de error
             error_message = soup.find(string="¡Ups! No pudimos encontrar esa página.")
             if error_message:
-                break
+                print(f"Página no encontrada: {base_url}")
+                continue
 
             process_products(soup)
-    except Exception as e:
-        continue
 
-# Cerrar la conexión con la base de datos
-conn.close()
+            # Visitar páginas adicionales si existen
+            for page_url in additional_pages:
+                try:
+                    driver.get(page_url)
+                    time.sleep(3)
 
-# Cerrar el controlador del navegador
-driver.quit()
+                    html = driver.page_source
+                    soup = BeautifulSoup(html, 'html.parser')
+
+                    error_message = soup.find(string="¡Ups! No pudimos encontrar esa página.")
+                    if error_message:
+                        print(f"Página no encontrada: {page_url}")
+                        break
+
+                    process_products(soup)
+                except Exception as e:
+                    print(f"Error al procesar {page_url}: {e}")
+                    continue
+
+        except Exception as e:
+            print(f"Error al acceder a {base_url}: {e}")
+            continue
+finally:
+    # Cerrar la conexión con la base de datos y el navegador
+    conn.close()
+    driver.quit()
+    print("Conexión cerrada y navegador terminado.")
 
 
