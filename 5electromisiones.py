@@ -27,48 +27,59 @@ headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
 }
 
-# Configurar las reintentos para las solicitudes
+# Configurar los reintentos para las solicitudes HTTP
 session = requests.Session()
-retry = Retry(total=5, backoff_factor=0.1, status_forcelist=[ 500, 502, 503, 504 ])
+retry = Retry(total=5, backoff_factor=0.3, status_forcelist=[500, 502, 503, 504])
 adapter = HTTPAdapter(max_retries=retry)
 session.mount('http://', adapter)
 session.mount('https://', adapter)
 
-# Crear una tabla para almacenar los datos
+# Crear la tabla en SQLite
 tabla_nombre = 'electromisiones'
 c.execute(f'''CREATE TABLE IF NOT EXISTS {tabla_nombre}
                 (Fecha TEXT, Descripcion TEXT, Precio TEXT)''')
 
-for base_url in base_urls:
-    try:
-        response = session.get(base_url, headers=headers)
-        response.raise_for_status()  # Lanza una excepción si el estado es 4xx, 5xx
-    except requests.exceptions.RequestException as e:
-        print(f"Ocurrió un error: {e}")
-        continue
+try:
+    for base_url in base_urls:
+        try:
+            print(f"Accediendo a: {base_url}")
+            response = session.get(base_url, headers=headers, timeout=10)
+            response.raise_for_status()  # Lanza una excepción para códigos de error HTTP
 
-    soup = BeautifulSoup(response.content, 'html.parser')
+            soup = BeautifulSoup(response.content, 'html.parser')
 
-    # Encuentra todos los divs de los productos
-    product_divs = soup.select("#category-description > div > div > section > div > div > div > div > div > div.elementor-element.elementor-element-51421d9.elementor-atc--align-justify.elementor-widget.elementor-widget-product-grid.elementor-widget-heading.elementor-widget-product-box > div > div > article") + \
-                   soup.select("#js-product-list > div > div > article")
+            # Encuentra los divs de productos con ambos selectores
+            product_divs = soup.select(
+                "#category-description article, #js-product-list article"
+            )
 
-    for product_div in product_divs:
-        # Obtiene la fecha actual
-        fecha_actual = datetime.now().strftime("%d/%m/%Y")
+            if not product_divs:
+                print(f"No se encontraron productos en: {base_url}")
+                continue
 
-        # Obtiene el nombre del producto
-        product_name_element = product_div.select_one("a > div.elementor-content > h3, div.tvproduct-wrapper.grid > div.tvproduct-info-box-wrapper > div > div.tvproduct-name.product-title > a > h6")
-        product_name = product_name_element.text.strip() if product_name_element else "No disponible"
+            for product_div in product_divs:
+                fecha_actual = datetime.now().strftime("%d/%m/%Y")
 
-        # Obtiene el precio del producto
-        price_element = product_div.select_one("a > div.elementor-content > div > span, div.tvproduct-wrapper.grid > div.tvproduct-info-box-wrapper > div > div.tv-product-price.tvproduct-name-price-wrapper > div > span")
-        product_price = price_element.text.strip() if price_element else "No disponible"
+                # Intentar extraer el nombre del producto con varios selectores
+                product_name_element = product_div.select_one("h3, h6")
+                product_name = product_name_element.text.strip() if product_name_element else "No disponible"
 
-        # Insertar los datos en la tabla
-        c.execute(f"INSERT INTO {tabla_nombre} (Fecha, Descripcion, Precio) VALUES (?, ?, ?)", (fecha_actual, product_name, product_price))
-        conn.commit()
+                # Intentar extraer el precio del producto con varios selectores
+                price_element = product_div.select_one("span.price, div.tv-product-price span")
+                product_price = price_element.text.strip() if price_element else "No disponible"
 
-# Cerrar la conexión con la base de datos
-conn.close()
+                # Insertar los datos en la base de datos
+                c.execute(f"INSERT INTO {tabla_nombre} (Fecha, Descripcion, Precio) VALUES (?, ?, ?)", 
+                          (fecha_actual, product_name, product_price))
+                conn.commit()
+
+        except requests.exceptions.RequestException as e:
+            print(f"Error al acceder a {base_url}: {e}")
+            continue
+
+finally:
+    # Cerrar la conexión con la base de datos
+    conn.close()
+    print("Conexión con la base de datos cerrada.")
+
 
