@@ -25,6 +25,16 @@ jobs:
     - name: Instalar dependencias
       run: pip install -r requirements.txt
 
+    # Verificar si la página está disponible antes de ejecutar el scraping
+    - name: Verificar disponibilidad de la página
+      run: |
+        if curl -Is https://electropunto.com.ar | head -n 1 | grep "200\|301\|302"; then
+          echo "Página en línea, ejecutando scraping..."
+        else
+          echo "Página en reparación, saliendo del workflow."
+          exit 0
+        fi
+
     # Instalar Firefox
     - name: Instalar Firefox
       uses: browser-actions/setup-firefox@v1
@@ -89,7 +99,6 @@ jobs:
         msg['From'] = email_address
         msg['To'] = destinatario
         msg['Subject'] = asunto
-        msg.attach(MIMEBase('application', 'octet-stream'))
 
         # Adjuntar archivo
         archivo = "precios_competencia.xlsx"
